@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `${window.location.origin}/api`;
 
 function getApiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
