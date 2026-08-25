@@ -1,5 +1,5 @@
 import { AuthTokens, TokenPayload } from '@/types/auth';
-import { clearTokens, setTokens, createMockToken, getDummyLoginEnabled, mockDelay } from '@/utils/auth';
+import { clearTokens, setTokens, createMockToken, decodeTokenPayload, getDummyLoginEnabled, mockDelay } from '@/utils/auth';
 import { apiPost } from '@/utils/api';
 import { API_ROUTES } from '@/constants/routes';
 import { MESSAGES } from '@/constants/messages';
@@ -44,6 +44,19 @@ export async function refreshAuthTokens(): Promise<AuthTokens> {
   const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken) {
     throw new Error(MESSAGES.error.auth.noRefreshToken);
+  }
+
+  if (getDummyLoginEnabled()) {
+    await mockDelay();
+    const payload = decodeTokenPayload(refreshToken);
+    if (!payload) {
+      throw new Error(MESSAGES.error.auth.noRefreshToken);
+    }
+    const accessToken = createMockToken(payload, 900);
+    const refreshPayload: TokenPayload = { ...payload, exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 };
+    const newRefreshToken = createMockToken(refreshPayload, 7 * 24 * 60 * 60);
+    setTokens(accessToken, newRefreshToken);
+    return { accessToken, refreshToken: newRefreshToken };
   }
 
   const data = await apiPost<LoginResponse>(API_ROUTES.auth.refresh, {
